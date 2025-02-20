@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <title>Pendulum Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #2a3d56, #121212);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            background-color: #f4f4f4;
+            color: #121212;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .canvas-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            justify-content: center;
+        }
+        canvas {
+            border: 1px solid white;
+            background: black;
+            display: block;
+        }
+        .light-mode canvas {
+            border: 1px solid #121212;
+            background: #f4f4f4;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-shrink: 0;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ccc;
+            max-width: 300px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+        .light-mode .info {
+            color: #666;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pendulum Simulation</h1>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="pendulumCanvas" width="400" height="400"></canvas>
+            <canvas id="MomentumGraphCanvas" width="400" height="300"></canvas>
+            <canvas id="energyGraphCanvas" width="400" height="300"></canvas>
+        </div>
+        <div class="info">
+            <p><strong>Acceleration:</strong> <span id="acceleration">0.000</span> m/s<sup>2</sup></p>
+            <p><strong>Velocity:</strong> <span id="velocity">0.000</span> m/s</p>
+            <p><strong>Kinetic Energy:</strong> <span id="kineticEnergy">0.00</span> J</p>
+            <p><strong>Potential Energy:</strong> <span id="potentialEnergy">0.00</span> J</p>
+            <p><strong>Total Energy:</strong> <span id="totalEnergy">0.00</span> J</p>
+            <p><strong>Momentum:</strong> <span id="momentum">0.00</span> kg·m/s</p>
+            <p><strong>Moment of Inertia:</strong> <span id="inertia">0.00</span> kg·m<sup>2</sup></p>
+        </div>
+    </div>
+    <div class="controls">
+        <label>Length: <span id="lengthValue">200</span> <input type="number" id="length" min="50" max="233" value="200"></label>
+        <label>Mass: <span id="massValue">5</span> <input type="range" id="mass" min="1" max="10" value="5"></label>
+        <label>Amplitude: <span id="amplitudeValue">45</span> <input type="range" id="amplitude" min="5" max="90" value="45"></label>
+        <label>Gravity: <span id="gravityValue">9.81</span> <input type="range" id="gravity" min="1" max="20" value="9.81" step="0.1"></label>
+        <div class="buttons">
+            <button id="startButton">Start</button>
+            <button id="pauseButton">Pause</button>
+            <button id="resetButton">Reset</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
