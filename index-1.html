@@ -119,6 +119,171 @@
             <button id="resetButton">Reset</button>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canvas = document.getElementById("pendulumCanvas");
+            const ctx = canvas.getContext("2d");
+        
+            const MomentumGraphCanvas = document.getElementById("MomentumGraphCanvas").getContext("2d");
+            const energyGraphCanvas = document.getElementById("energyGraphCanvas").getContext("2d");
+        
+            let length = parseFloat(document.getElementById("length").value);
+            let mass = parseFloat(document.getElementById("mass").value);
+            let amplitude = parseFloat(document.getElementById("amplitude").value) * (Math.PI / 180);
+            let gravity = parseFloat(document.getElementById("gravity").value);
+        
+            let time = 0;
+            let timeStep = 0.05;
+            let paused = false;
+            let originX = canvas.width / 2;
+            let originY = 100;
+            let pendulumX, pendulumY, angle, velocity = 0, acceleration = 0;
+            let kineticEnergy = 0, potentialEnergy = 0, totalEnergy = 0;
+            let momentum = 0, inertia = 0;
+        
+            function updateValues() {
+                document.getElementById("lengthValue").textContent = length;
+                document.getElementById("massValue").textContent = mass;
+                document.getElementById("amplitudeValue").textContent = (amplitude * (180 / Math.PI)).toFixed(1);
+                document.getElementById("gravityValue").textContent = gravity;
+            }
+        
+            function calculateEnergy() {
+                kineticEnergy = 0.5 * mass * Math.pow(velocity * length, 2) ;
+                potentialEnergy = mass * gravity * (length - (length * Math.cos(angle)));
+                totalEnergy = kineticEnergy + potentialEnergy;
+                momentum = mass * velocity * length;
+                inertia = mass * Math.pow(length, 2);
+        
+                document.getElementById("acceleration").textContent = acceleration.toFixed(2);
+                document.getElementById("velocity").textContent = velocity.toFixed(2);
+                document.getElementById("kineticEnergy").textContent = kineticEnergy.toFixed(2);
+                document.getElementById("potentialEnergy").textContent = potentialEnergy.toFixed(2);
+                document.getElementById("totalEnergy").textContent = totalEnergy.toFixed(2);
+                document.getElementById("momentum").textContent = momentum.toFixed(2);
+                document.getElementById("inertia").textContent = inertia.toFixed(2);
+            }
+        
+            function drawPendulum() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pendulumX = originX + length * Math.sin(angle);
+                pendulumY = originY + length * Math.cos(angle);
+        
+                ctx.beginPath();
+                ctx.moveTo(originX, originY);
+                ctx.lineTo(pendulumX, pendulumY);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+        
+                ctx.beginPath();
+                ctx.arc(pendulumX, pendulumY, mass * 2, 0, Math.PI * 2);
+                ctx.fillStyle = "red";
+                ctx.fill();
+                ctx.strokeStyle = "white";
+                ctx.stroke();
+            }
+        
+            function updatePendulum() {
+                if (paused) return;
+        
+                acceleration = (-gravity / length) * Math.sin(angle);
+                velocity += acceleration * timeStep;
+                angle += velocity * timeStep;
+                calculateEnergy();
+                drawPendulum();
+        
+                time += timeStep;
+                MomentumChart.data.labels.push(time.toFixed(1));
+                MomentumChart.data.datasets[0].data.push(momentum);
+        
+                energyChart.data.labels.push(time.toFixed(1));
+                energyChart.data.datasets[0].data.push(kineticEnergy);
+                energyChart.data.datasets[1].data.push(potentialEnergy);
+                energyChart.update();
+                MomentumChart.update();
+        
+                requestAnimationFrame(updatePendulum);
+            }
+        
+            const MomentumChart = new Chart(MomentumGraphCanvas, {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: "Momentum (kg m/s)",
+                        borderColor: "yellow",
+                        data: [],
+                        fill: false
+                    }]
+                },
+                options: { responsive: false, scales: { x: { title: { display: true, text: "Time (s)" } }, y: { title: { display: true, text: "Momentum" } } } }
+            });
+        
+            const energyChart = new Chart(energyGraphCanvas, {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: "Kinetic Energy", borderColor: "red", data: [], fill: false },
+                        { label: "Potential Energy", borderColor: "blue", data: [], fill: false }
+                    ]
+                },
+                options: { responsive: false, scales: { x: { title: { display: true, text: "Time (s)" } }, y: { title: { display: true, text: "Energy (J)" } } } }
+            });
+        
+            document.getElementById("startButton").addEventListener("click", function () {
+                paused = false;
+                requestAnimationFrame(updatePendulum);
+            });
+        
+            document.getElementById("pauseButton").addEventListener("click", function () {
+                paused = true;
+            });
+        
+            document.getElementById("resetButton").addEventListener("click", function () {
+                time = 0;
+                velocity = 0;
+                angle = amplitude;
+                MomentumChart.data.labels = [];
+                MomentumChart.data.datasets[0].data = [];
+                energyChart.data.labels = [];
+                energyChart.data.datasets[0].data = [];
+                energyChart.data.datasets[1].data = [];
+                updatePendulum();
+            });
+        
+            document.getElementById("length").addEventListener("input", function () {
+                length = parseFloat(this.value);
+                updateValues();
+            });
+        
+            document.getElementById("mass").addEventListener("input", function () {
+                mass = parseFloat(this.value);
+                updateValues();
+            });
+        
+            document.getElementById("amplitude").addEventListener("input", function () {
+                amplitude = parseFloat(this.value) * (Math.PI / 180);
+                updateValues();
+            });
+        
+            document.getElementById("gravity").addEventListener("input", function () {
+                gravity = parseFloat(this.value);
+                updateValues();
+            });
+        
+            function toggleTheme() {
+                document.body.classList.toggle("light-mode");
+            }
+        
+            window.toggleTheme = toggleTheme;
+        
+            angle = amplitude;
+            updateValues();
+            drawPendulum();
+        });
+
+    </script>
 </body>
 </html>
