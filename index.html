@@ -9,11 +9,13 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #121212;
+            background-color: #cccccc;
+            background-image: linear-gradient(to right, #f1f2b5, #135058);
             color: white;
             margin: 0;
             padding: 20px;
             transition: background-color 0.3s, color 0.3s;
+
         }
         body.light-mode {
             background-color: #f4f4f4;
@@ -161,15 +163,15 @@
                 bobY = canvas.height;
             }
 
-            // Draw pendulum trail
-            trail.push({ x: bobX, y: bobY });
-            if (trail.length > 50) trail.shift();
-            ctx.beginPath();
-            trail.forEach((point, index) => {
-                ctx.strokeStyle = `rgba(255, 0, 0, ${index / trail.length})`;
-                ctx.lineTo(point.x, point.y);
-            });
-            ctx.stroke();
+            // // Draw pendulum trail
+            // trail.push({ x: bobX, y: bobY });
+            // if (trail.length > 50) trail.shift();
+            // ctx.beginPath();
+            // trail.forEach((point, index) => {
+            //     ctx.strokeStyle = `rgba(255, 0, 0, ${index / trail.length})`;
+            //     ctx.lineTo(point.x, point.y);
+            // });
+            // ctx.stroke();
 
             // Draw pendulum
             ctx.beginPath();
