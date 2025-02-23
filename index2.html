@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendulum Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            color: white;
+            margin: 0;
+            background-image: url("earth.jpg");
+            transition: background-color 0.3s, color 0.3s, background-image 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+        body.light-mode {
+            background-color: #f4f4f4;
+            color: #121212;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        canvas {
+            border: 1px solid white;
+            background: black;
+            display: block;
+        }
+        .light-mode canvas {
+            border: 1px solid #121212;
+            background: #f4f4f4;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .light-mode .info {
+            color: #666;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pendulum Simulation</h1>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="pendulumCanvas" width="400" height="300"></canvas>
+            <canvas id="angleGraphCanvas" width="400" height="300"></canvas>
+            <canvas id="energyGraphCanvas" width="400" height="300"></canvas>
+        </div>
+        <div class="controls">
+            <label>Length: <span id="lengthValue">200</span> <input type="range" id="length" min="50" max="233" value="200"></label>
+            <label>Mass: <span id="massValue">5</span> <input type="range" id="mass" min="1" max="10" value="5"></label>
+            <label>Amplitude: <span id="amplitudeValue">45</span> <input type="range" id="amplitude" min="5" max="90" value="45"></label>
+            <label>Gravity: <span id="gravityValue">9.81</span> <input type="range" id="gravity" min="1" max="20" value="9.81" step="0.1"></label>
+            <div class="buttons">
+                <button id="startButton">Start</button>
+                <button id="pauseButton">Pause</button>
+                <button id="resetButton">Reset</button>
+            </div>
+            <select id="planetSelect">
+                <option value="EARTH" selected>EARTH</option>
+                <option value="MOON">MOON</option>
+                <option value="MARS">MARS</option>
+            </select>
+        </div>
+        <div class="info">
+            <p><strong>Kinetic Energy:</strong> <span id="kineticEnergy">0.00</span> J</p>
+            <p><strong>Potential Energy:</strong> <span id="potentialEnergy">0.00</span> J</p>
+            <p><strong>Total Energy:</strong> <span id="totalEnergy">0.00</span> J</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const resetButton = document.getElementById('resetButton');
+        const angleGraphCanvas = document.getElementById('angleGraphCanvas');
+        const energyGraphCanvas = document.getElementById('energyGraphCanvas');
+        const lengthSlider = document.getElementById('length');
+        const massSlider = document.getElementById('mass');
+        const amplitudeSlider = document.getElementById('amplitude');
+        const gravitySlider = document.getElementById('gravity');
+        const lengthValue = document.getElementById('lengthValue');
+        const massValue = document.getElementById('massValue');
+        const amplitudeValue = document.getElementById('amplitudeValue');
+        const gravityValue = document.getElementById('gravityValue');
+        const kineticEnergyDisplay = document.getElementById('kineticEnergy');
+        const potentialEnergyDisplay = document.getElementById('potentialEnergy');
+        const totalEnergyDisplay = document.getElementById('totalEnergy');
+        const planetSelect = document.getElementById('planetSelect');
+        let angleGraphChart, energyGraphChart;
+
+        let length = parseInt(lengthSlider.value);
+        let mass = parseInt(massSlider.value);
+        let amplitude = parseInt(amplitudeSlider.value);
+        let gravity = parseFloat(gravitySlider.value);
+        let angle = amplitude * (Math.PI / 180);
+        let angularVelocity = 0;
+        let angularAcceleration = 0;
+        let damping = 0.995;
+        let animationRunning = false;
+        let time = 0;
+        let timeData = [];
+        let angleData = [];
+        let kineticEnergyData = [];
+        let potentialEnergyData = [];
+        const maxDataPoints = 100;
+        const trail = [];
+
+        // Planet-specific gravity values
+        const planetGravity = {
+            EARTH: 9.81,
+            MOON: 1.62,
+            MARS: 3.71
+        };
+
+        // Planet-specific background images
+        const planetBackgrounds = {
+            EARTH: 'url("earth.jpg")',
+            MOON: 'url("moon.jpg")',
+            MARS: 'url("mars.jpg")'
+        };
+
+        function drawPendulum() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let originX = canvas.width / 2;
+            let originY = 50;
+            let bobX = originX + length * Math.sin(angle);
+            let bobY = originY + length * Math.cos(angle);
+            
+            // Ensure the bob stays within the canvas
+            if (bobY > canvas.height) {
+                bobY = canvas.height;
+            }
+
+            // Draw pendulum trail
+            trail.push({ x: bobX, y: bobY });
+            if (trail.length > 50) trail.shift();
+            ctx.beginPath();
+            trail.forEach((point, index) => {
+                ctx.strokeStyle = `rgba(255, 0, 0, ${index / trail.length})`;
+                ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+
+            // Draw pendulum
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(bobX, bobY);
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, mass * 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+        }
+        
+        function updatePendulum() {
+            angularAcceleration = (-gravity / length) * Math.sin(angle);
+            angularVelocity += angularAcceleration * 0.3;
+            angularVelocity *= damping;
+            angle += angularVelocity * 0.3;
+            
+            if (animationRunning) {
+                time += 0.05;
+                timeData.push(time.toFixed(2));
+                angleData.push(angle);
+
+                // Calculate energies
+                const kineticEnergy = 0.5 * mass * Math.pow(length * angularVelocity, 2);
+                const potentialEnergy = mass * gravity * length * (1 - Math.cos(angle));
+                const totalEnergy = kineticEnergy + potentialEnergy;
+
+                kineticEnergyData.push(kineticEnergy);
+                potentialEnergyData.push(potentialEnergy);
+
+                kineticEnergyDisplay.textContent = kineticEnergy.toFixed(2);
+                potentialEnergyDisplay.textContent = potentialEnergy.toFixed(2);
+                totalEnergyDisplay.textContent = totalEnergy.toFixed(2);
+
+                // Keep only the last `maxDataPoints` data points
+                if (timeData.length > maxDataPoints) {
+                    timeData.shift();
+                    angleData.shift();
+                    kineticEnergyData.shift();
+                    potentialEnergyData.shift();
+                }
+
+                plotGraphs();
+            }
+        }
+
+        function plotGraphs() {
+            if (!angleGraphChart) {
+                const angleGraphCtx = angleGraphCanvas.getContext('2d');
+                angleGraphChart = new Chart(angleGraphCtx, {
+                    type: 'line',
+                    data: {
+                        labels: timeData,
+                        datasets: [{
+                            label: 'Angular Displacement (rad)',
+                            data: angleData,
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        animation: false, // Disable animation for real-time updates
+                        scales: {
+                            x: { title: { display: true, text: 'Time (s)' } },
+                            y: { title: { display: true, text: 'Angle (rad)' } }
+                        }
+                    }
+                });
+            } else {
+                angleGraphChart.data.labels = timeData;
+                angleGraphChart.data.datasets[0].data = angleData;
+                angleGraphChart.update();
+            }
+
+            if (!energyGraphChart) {
+                const energyGraphCtx = energyGraphCanvas.getContext('2d');
+                energyGraphChart = new Chart(energyGraphCtx, {
+                    type: 'line',
+                    data: {
+                        labels: timeData,
+                        datasets: [
+                            {
+                                label: 'Kinetic Energy (J)',
+                                data: kineticEnergyData,
+                                borderColor: 'blue',
+                                borderWidth: 2,
+                                fill: false,
+                            },
+                            {
+                                label: 'Potential Energy (J)',
+                                data: potentialEnergyData,
+                                borderColor: 'green',
+                                borderWidth: 2,
+                                fill: false,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: false,
+                        animation: false, // Disable animation for real-time updates
+                        scales: {
+                            x: { title: { display: true, text: 'Time (s)' } },
+                            y: { title: { display: true, text: 'Energy (J)' } }
+                        }
+                    }
+                });
+            } else {
+                energyGraphChart.data.labels = timeData;
+                energyGraphChart.data.datasets[0].data = kineticEnergyData;
+                energyGraphChart.data.datasets[1].data = potentialEnergyData;
+                energyGraphChart.update();
+            }
+        }
+
+        function animate() {
+            if (animationRunning) {
+                updatePendulum();
+                drawPendulum();
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // Event listeners
+        lengthSlider.addEventListener('input', () => {
+            length = parseInt(lengthSlider.value);
+            lengthValue.textContent = length;
+        });
+
+        massSlider.addEventListener('input', () => {
+            mass = parseInt(massSlider.value);
+            massValue.textContent = mass;
+        });
+
+        amplitudeSlider.addEventListener('input', () => {
+            amplitude = parseInt(amplitudeSlider.value);
+            amplitudeValue.textContent = amplitude;
+            angle = amplitude * (Math.PI / 180);
+        });
+
+        gravitySlider.addEventListener('input', () => {
+            gravity = parseFloat(gravitySlider.value);
+            gravityValue.textContent = gravity;
+        });
+
+        planetSelect.addEventListener('change', () => {
+            const selectedPlanet = planetSelect.value;
+            gravity = planetGravity[selectedPlanet];
+            gravitySlider.value = gravity;
+            gravityValue.textContent = gravity;
+
+            // Update background image with smooth transition
+            document.body.style.backgroundImage = planetBackgrounds[selectedPlanet];
+        });
+
+        startButton.addEventListener('click', () => {
+            if (!animationRunning) {
+                time = 0;
+                timeData = [];
+                angleData = [];
+                kineticEnergyData = [];
+                potentialEnergyData = [];
+                angle = amplitude * (Math.PI / 180);
+                angularVelocity = 0;
+                animationRunning = true;
+                animate();
+            }
+        });
+        
+        pauseButton.addEventListener('click', () => {
+            animationRunning = false;
+        });
+        
+        resetButton.addEventListener('click', () => {
+            animationRunning = false;
+            time = 0;
+            timeData = [];
+            angleData = [];
+            kineticEnergyData = [];
+            potentialEnergyData = [];
+            trail.length = 0;
+            if (angleGraphChart) {
+                angleGraphChart.destroy();
+                angleGraphChart = null;
+            }
+            if (energyGraphChart) {
+                energyGraphChart.destroy();
+                energyGraphChart = null;
+            }
+            drawPendulum();
+        });
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+        }
+    </script>
+</body>
+</html>
