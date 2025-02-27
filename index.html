@@ -95,7 +95,7 @@
     </style>
 </head>
 <body>
-    <h1>Pendulum Simulation</h1>
+    <h1>PENDULUM SIMULATION</h1>
     <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
     <div class="container">
         <div class="canvas-container">
@@ -110,8 +110,10 @@
             <label>Gravity: <span id="gravityValue">9.81</span> <input type="range" id="gravity" min="1" max="20" value="9.81" step="0.1"></label>
             <div class="buttons">
                 <button id="startButton">Start</button>
+                <button id="playButton">Play</button>
                 <button id="pauseButton">Pause</button>
                 <button id="resetButton">Reset</button>
+
             </div>
             <select id="planetSelect">
                 <option value="EARTH" selected>EARTH</option>
@@ -130,6 +132,7 @@
         const canvas = document.getElementById('pendulumCanvas');
         const ctx = canvas.getContext('2d');
         const startButton = document.getElementById('startButton');
+        const playButton = document.getElementById('playButton');
         const pauseButton = document.getElementById('pauseButton');
         const resetButton = document.getElementById('resetButton');
         const angleGraphCanvas = document.getElementById('angleGraphCanvas');
@@ -165,14 +168,13 @@
         const maxDataPoints = 100;
         const trail = [];
 
-        // Planet-specific gravity values
         const planetGravity = {
             EARTH: 9.81,
             MOON: 1.62,
             MARS: 3.71
         };
 
-        // Planet-specific background images
+
         const planetBackgrounds = {
             EARTH: 'url("earth.jpg")',
             MOON: 'url("moon.jpg")',
@@ -186,12 +188,12 @@
             let bobX = originX + length * Math.sin(angle);
             let bobY = originY + length * Math.cos(angle);
             
-            // Ensure the bob stays within the canvas
+
             if (bobY > canvas.height) {
                 bobY = canvas.height;
             }
 
-            // Draw pendulum trail
+            // pendulum trail
             trail.push({ x: bobX, y: bobY });
             if (trail.length > 50) trail.shift();
             ctx.beginPath();
@@ -201,7 +203,7 @@
             });
             ctx.stroke();
 
-            // Draw pendulum
+
             ctx.beginPath();
             ctx.moveTo(originX, originY);
             ctx.lineTo(bobX, bobY);
@@ -222,11 +224,10 @@
             angle += angularVelocity * 0.3;
             
             if (animationRunning) {
-                time += 0.05;
+                time += 0.02;
                 timeData.push(time.toFixed(2));
                 angleData.push(angle);
 
-                // Calculate energies
                 const kineticEnergy = 0.5 * mass * Math.pow(length * angularVelocity, 2);
                 const potentialEnergy = mass * gravity * length * (1 - Math.cos(angle));
                 const totalEnergy = kineticEnergy + potentialEnergy;
@@ -238,7 +239,7 @@
                 potentialEnergyDisplay.textContent = potentialEnergy.toFixed(2);
                 totalEnergyDisplay.textContent = totalEnergy.toFixed(2);
 
-                // Keep only the last `maxDataPoints` data points
+
                 if (timeData.length > maxDataPoints) {
                     timeData.shift();
                     angleData.shift();
@@ -267,7 +268,7 @@
                     },
                     options: {
                         responsive: false,
-                        animation: false, // Disable animation for real-time updates
+                        animation: false, 
                         scales: {
                             x: { title: { display: true, text: 'Time (s)' } },
                             y: { title: { display: true, text: 'Angle (rad)' } }
@@ -301,11 +302,14 @@
                                 borderWidth: 2,
                                 fill: false,
                             }
+
+
+                            
                         ]
                     },
                     options: {
                         responsive: false,
-                        animation: false, // Disable animation for real-time updates
+                        animation: false,
                         scales: {
                             x: { title: { display: true, text: 'Time (s)' } },
                             y: { title: { display: true, text: 'Energy (J)' } }
@@ -328,7 +332,6 @@
             }
         }
 
-        // Event listeners
         lengthSlider.addEventListener('input', () => {
             length = parseInt(lengthSlider.value);
             lengthValue.textContent = length;
@@ -355,8 +358,6 @@
             gravity = planetGravity[selectedPlanet];
             gravitySlider.value = gravity;
             gravityValue.textContent = gravity;
-
-            // Update background image with smooth transition
             document.body.style.backgroundImage = planetBackgrounds[selectedPlanet];
         });
 
@@ -374,28 +375,38 @@
             }
         });
         
-        pauseButton.addEventListener('click', () => {
-            animationRunning = false;
-        });
-        
-        resetButton.addEventListener('click', () => {
-            animationRunning = false;
-            time = 0;
-            timeData = [];
-            angleData = [];
-            kineticEnergyData = [];
-            potentialEnergyData = [];
-            trail.length = 0;
-            if (angleGraphChart) {
-                angleGraphChart.destroy();
-                angleGraphChart = null;
-            }
-            if (energyGraphChart) {
-                energyGraphChart.destroy();
-                energyGraphChart = null;
-            }
-            drawPendulum();
-        });
+        playButton.addEventListener('click', () => {
+    if (!animationRunning) {
+        animationRunning = true;
+        animate();
+        playButton.disabled = true; 
+    }
+});
+
+pauseButton.addEventListener('click', () => {
+    animationRunning = false;
+    playButton.disabled = false; 
+});
+
+resetButton.addEventListener('click', () => {
+    animationRunning = false;
+    playButton.disabled = false;
+    time = 0;
+    timeData = [];
+    angleData = [];
+    kineticEnergyData = [];
+    potentialEnergyData = [];
+    trail.length = 0;
+    if (angleGraphChart) {
+        angleGraphChart.destroy();
+        angleGraphChart = null;
+    }
+    if (energyGraphChart) {
+        energyGraphChart.destroy();
+        energyGraphChart = null;
+    }
+    drawPendulum();
+});
 
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
